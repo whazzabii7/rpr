@@ -1,6 +1,5 @@
 package rpr
 
-// Base Interface Structure of Payloads
 type Payload interface {
 	Get1() any
 	Get2() (any, any)

@@ -28,7 +28,6 @@ func NewRequest[T RequestConstraint](reqType T, payload Payload, response chan *
 	return req
 }
 
-// Submit übergibt den Request sicher in den Ziel-Channel
 func (r *Request[T]) Submit(requestCh chan *Request[T]) {
 	requestCh <- r
 }
