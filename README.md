@@ -110,9 +110,9 @@ go test -bench=. -benchmem
 
 Test Results:
 ```go
-BenchmarkRPR_SpeedAndAllocations-16    184203108    6.421 ns/op    0 B/op    0 allocs/op
+BenchmarkRPR_SpeedAndAllocations-16    35978204    32.90 ns/op    0 B/op    0 allocs/op
 PASS
-ok      github.com/whazzabii7/rpr       1.243s
+ok      github.com/whazzabii7/rpr       1.543s
 ```
 
 ## Installation
