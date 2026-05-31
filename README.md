@@ -1,4 +1,9 @@
 # RPR (Remote Process Routing)
+[![Go Report Card](https://goreportcard.com/badge/github.com/whazzabii7/rpr)](https://goreportcard.com/report/github.com/whazzabii7/rpr)
+[![Go Reference](https://pkg.go.dev/badge/github.com/whazzabii7/rpr.svg)](https://pkg.go.dev/github.com/whazzabii7/rpr)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Allocations](https://img.shields.io/badge/Allocations-0%20B%2Fop-brightgreen?style=flat-square&logo=go)](#benchmarks)
+[![Memory](https://img.shields.io/badge/GC--Overhead-Zero-blue?style=flat-square)](#aim-goal)
 
 High-Performance In-Memory Communication Matrix for Go.
 
