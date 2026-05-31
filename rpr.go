@@ -45,9 +45,14 @@ func Assign[T any](src any, dst *T) bool {
 	return false
 }
 
-func Recover(responseCh chan *Response) {
-	if r := recover(); r != nil {
-		err := fmt.Errorf("critical panic recovered: %v", r)
-		NewResponseErr(err).Submit(responseCh)
+func Recover(responseCh chan *Response, onPanic ...func(panicErr any)) {
+	r := recover()
+	if  r == nil {
+		return 
 	}
+	err := fmt.Errorf("critical panic recovered: %v", r)
+	NewResponseErr(err).Submit(responseCh)
+	if len(onPanic) > 0 && onPanic[0] != nil {
+		onPanic[0](r)
+	}	
 }
