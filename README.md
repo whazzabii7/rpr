@@ -4,97 +4,97 @@ High-Performance In-Memory Communication Matrix for Go.
 
 ## Description
 
-RPR ist eine minimalistische, hocheffiziente und typsichere In-Memory-Kommunikationsmatrix für die Go-Laufzeitumgebung. Das Framework wurde speziell für eingebettete, ereignisgesteuerte Micro-Engines und nach dem Actor-Modell designte Systeme entwickelt, bei denen Latenzzeiten im Nanosekundenbereich und die absolute Vermeidung von Garbage-Collection-Overhead (GC) kritische Systemanforderungen darstellen.
+RPR is a minimalist, highly efficient, and type-safe in-memory communication matrix for the Go runtime environment. The framework was specifically developed for embedded, event-driven micro-engines and systems designed according to the Actor model, where nanosecond-level latencies and the absolute avoidance of Garbage Collection (GC) overhead are critical system requirements.
 
-Durch den konsequenten Einsatz von internem Speicher-Recycling via sync.Pool und den Verzicht auf rechenintensive Laufzeit-Reflection garantiert RPR eine allokationsfreie Datenübertragung zwischen isolierten Systemkomponenten.
+Through the consistent use of internal memory recycling via sync.Pool and the elimination of compute-intensive runtime reflection, RPR guarantees allocation-free data transmission between isolated system components.
 
 ## AIM-Goal
 
-Die Kernziele des Frameworks sind streng auf die Anforderungen von Hochverfügbarkeitssystemen (SLA-driven Enterprise Architectures) ausgerichtet:
+The core goals of the framework are strictly aligned with the requirements of high-availability systems (SLA-driven Enterprise Architectures):
 
-* Zero-Allocation Lifecycle: Vollständige Eliminierung von Heap-Allokationen während des gesamten Request-Response-Durchlaufs zur Gewährleistung deterministischer Latenzzeiten.
-* Compile-Time Type Safety: Physische Isolation von Modul-Pipelines durch den Einsatz von Go-Generics und Typ-Constraints (RequestConstraint). Fehlerhafte Daten- oder Befehlsadressierungen werden bereits zur Kompilierzeit und nicht erst zur Laufzeit abgefangen.
-* Resilience & Fault Isolation: Absicherung langlebiger Worker-Goroutinen durch integrierte, performante Panic-Recovery-Mechanismen.
-* Low Memory Footprint: Minimierung des Memory-Overheads durch effiziente, unsafe-unterstützte Zeiger-Konvertierungen innerhalb der Objekt-Pools.
+* Zero-Allocation Lifecycle: Complete elimination of heap allocations during the entire request-response cycle to ensure deterministic latencies.
+* Compile-Time Type Safety: Physical isolation of module pipelines through the use of Go generics and type constraints (RequestConstraint). Erroneous data or command addressing is caught at compile time rather than at runtime.
+* Resilience & Fault Isolation: Safeguarding long-running worker goroutines through integrated, high-performance panic recovery mechanisms.
+* Low Memory Footprint: Minimizing memory overhead through efficient, unsafe-supported pointer conversions within the object pools.
 
 ## Usage
 
-Das folgende Architektur-Beispiel demonstriert die Implementierung einer typsicheren, isolierten Pipeline für ein fiktives Submodul.
+The following architecture example demonstrates the implementation of a type-safe, isolated pipeline for a fictional sub-module.
 
-### 1. Definition des Modul-Vertrags (Contract)
+### 1. Definition of the Module Contract
 
-Jedes Modul definiert seine eigenen, dedizierten Befehlssätze über Go-Konstanten. Dies erzwingt die Isolation auf Compiler-Ebene.
+Each module defines its own dedicated command sets via Go constants. This enforces isolation at the compiler level.
 
 ```go
 package main
 
-import "[github.com/whazzabii7/rpr](https://github.com/whazzabii7/rpr)"
+import "github.com/whazzabii7/rpr"
 
-// Definition des modulspezifischen Typs
+// Definition of the module-specific type
 type EngineCommand int
 
-// Definition der eindeutigen Befehle innerhalb des Moduls
+// Definition of unique commands within the module
 const (
 	CmdEngineSpawn EngineCommand = iota
 	CmdEngineDestroy
 )
 
-// Definition der Payload-Struktur
+// Definition of the payload structure
 type EnginePayload struct {
 	ClusterID string
 	NodeCount int
 }
 ```
 
-### 2. Request-Übertragung und Typsichere Zuweisung
+### 2. Request Transmission and Type-Safe Assignment
 
-Der Sender verpackt die Daten allokationsfrei. Der Empfänger (Worker) entpackt diese ohne Performance-Verlust mittels rpr.Assign.
+The sender packages the data allocation-free. The receiver (worker) unpacks it without performance loss using rpr.Assign.
 
 ```go
 func handlePipeline(queue chan *rpr.Request[EngineCommand], responseChan chan *rpr.Response) {
 	for req := range queue {
-		// Allokationsfreie Absicherung gegen unvorhergesehene Panics im Worker
+		// Allocation-free protection against unforeseen panics in the worker
 		defer rpr.Recover(req.Response)
 
 		switch req.Type {
 		case CmdEngineSpawn:
 			var data EnginePayload
 			
-			// Typsicheres Mapping ohne Reflection
+			// Type-safe mapping without reflection
 			if rpr.Assign(req.Payload.Get1(), &data) {
-				// Verarbeitung der Geschäftslogik
+				// Processing business logic
 				// ...
 				
-				// Erfolgreiche Antwort zurückgeben, Payload darf nicht nil sein für CheckResponse
+				// Return successful response, payload must not be nil for CheckResponse
 				rpr.NewResponse(req.Payload, nil).Submit(req.Response)
 			} else {
 				rpr.NewResponseErr(rpr.ErrUnpackPayloadFail).Submit(req.Response)
 			}
 		}
 		
-		// Wichtig: Ressourcen zurück in den sync.Pool übergeben
+		// Important: Return resources to the sync.Pool
 		req.Release()
 	}
 }
 ```
 
-### 3. Pipeline-Initialisierung und Aufruf
+### 3. Pipeline Initialization and Invocation
 
 ```go
 func main() {
-	// Erstellung einer typsicheren Pipeline
+	// Creating a type-safe pipeline
 	pipeline := rpr.MakeRequestChan[EngineCommand](100)
 	resChan := rpr.MakeResponseChan()
 
-	// Initialisierung der Datenstruktur
+	// Initializing the data structure
 	payloadData := EnginePayload{ClusterID: "eu-central-1", NodeCount: 12}
 
-	// Request erstellen, Payload packen und in die Pipeline einspeisen
+	// Create request, pack payload, and feed into the pipeline
 	rpr.NewRequest(CmdEngineSpawn, rpr.Pack(&payloadData), resChan).Submit(pipeline)
 
-	// Validierung der Antwort
+	// Validating the response
 	if res, ok := rpr.CheckResponse(resChan); ok {
-		// Transaktion erfolgreich abgeschlossen
+		// Transaction successfully completed
 		res.Release()
 	}
 }
@@ -102,27 +102,27 @@ func main() {
 
 ## Benchmarks
 
-Die Performance-Metriken wurden unter realen Bedingungen getestet. Das Framework erzielt über den gesamten Lifecycle hinweg eine konstante Allokationsrate von Null.
+The performance metrics were tested under real-world conditions. The framework achieves a constant allocation rate of zero throughout the entire lifecycle.
 
 ```go
 go test -bench=. -benchmem
 ```
 
-Testergebnisse:
+Test Results:
 ```go
 BenchmarkRPR_SpeedAndAllocations-16    184203108    6.421 ns/op    0 B/op    0 allocs/op
 PASS
-ok      [github.com/whazzabii7/rpr](https://github.com/whazzabii7/rpr)       1.243s
+ok      github.com/whazzabii7/rpr       1.243s
 ```
 
 ## Installation
 
-Zur Integration des Moduls in ein bestehendes Go-Projekt muss der Go-Paketmanager aufgerufen werden:
+To integrate the module into an existing Go project, invoke the Go package manager:
 
 ```go
-go get [github.com/whazzabii7/rpr@v1.0.0](https://github.com/whazzabii7/rpr@v1.0.0)
+go get github.com/whazzabii7/rpr@v1.0.0
 ```
 
 ## License
 
-Dieses Framework ist lizenziert unter der MIT-Lizenz. Siehe die LICENSE Datei für detaillierte Informationen.
+This framework is licensed under the MIT License. See the LICENSE file for detailed information.
