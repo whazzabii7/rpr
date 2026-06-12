@@ -1,4 +1,4 @@
-module github.com/whazzabii7/rpr
+module github.com/wzbii7/rpr
 
 go 1.26.3
 
